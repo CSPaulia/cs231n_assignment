@@ -192,6 +192,7 @@ def show_net_weights(net, name):
     W1 = net.params['W1']
     W1 = W1.reshape(32, 32, 3, -1).transpose(3, 0, 1, 2)
     plt.imshow(visualize_grid(W1, padding=3).astype('uint8'))
+    plt.title(f'{name}')
     plt.gca().axis('off')
     plt.savefig(f'vclab-project1/project1/figs/{name}_weight.png')
     plt.close()
@@ -240,6 +241,69 @@ show_net_weights(best_net, 'improved')
 test_acc = (best_net.predict(X_test) == y_test).mean()
 logger.info(f'Test accuracy: {test_acc}')
 
+# Plot the loss function and train / validation accuracies
+plt.subplot(2, 1, 1)
+plt.plot(stats['loss_history'])
+plt.title('Loss history')
+plt.xlabel('Iteration')
+plt.ylabel('Loss')
+
+plt.subplot(2, 1, 2)
+plt.plot(stats['train_acc_history'], label='train')
+plt.plot(stats['val_acc_history'], label='val')
+plt.title('Classification accuracy history')
+plt.xlabel('Epoch')
+plt.ylabel('Classification accuracy')
+plt.legend()
+plt.subplots_adjust(hspace=0.5)
+plt.savefig('vclab-project1/project1/figs/improved_training_loss.png')
+plt.close()
+
+logger.info(f'training model with adjuested reg---------------------------------')
+
+input_size = 32 * 32 * 3
+hidden_size = 256
+num_classes = 10
+net = TwoLayerNet(input_size, hidden_size, num_classes, std=1e-4)
+
+stats = net.train(X_train, y_train, X_val, y_val,
+            num_iters=2000, batch_size=200,
+            learning_rate=2e-3, learning_rate_decay=0.95,
+            reg=0.75, verbose=True, logger=logger)
+
+best_net = net
+
+# *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
+# Print your validation accuracy: this should be above 48%
+val_acc = (best_net.predict(X_val) == y_val).mean()
+logger.info(f'Validation accuracy: {val_acc}')
+
+# Visualize the weights of the best network
+show_net_weights(best_net, 'improved_reg')
+
+# Print your test accuracy: this should be above 48%
+test_acc = (best_net.predict(X_test) == y_test).mean()
+logger.info(f'Test accuracy: {test_acc}')
+
+# Plot the loss function and train / validation accuracies
+plt.subplot(2, 1, 1)
+plt.plot(stats['loss_history'])
+plt.title('Loss history')
+plt.xlabel('Iteration')
+plt.ylabel('Loss')
+
+plt.subplot(2, 1, 2)
+plt.plot(stats['train_acc_history'], label='train')
+plt.plot(stats['val_acc_history'], label='val')
+plt.title('Classification accuracy history')
+plt.xlabel('Epoch')
+plt.ylabel('Classification accuracy')
+plt.legend()
+plt.subplots_adjust(hspace=0.5)
+plt.savefig('vclab-project1/project1/figs/improved_reg_training_loss.png')
+plt.close()
+
 logger.info(f'training model with cosine annealing---------------------------------')
 
 input_size = 32 * 32 * 3
@@ -250,6 +314,9 @@ net = TwoLayerNet(input_size, hidden_size, num_classes, std=1e-4)
 initial_lr = 2e-3
 total_epochs = 5
 
+loss_history = []
+train_acc_history = []
+val_acc_history = []
 for epoch in range(1, 5):
     current_lr = 0.5 * (1 + np.cos(epoch / total_epochs * np.pi)) * initial_lr
 
@@ -257,6 +324,10 @@ for epoch in range(1, 5):
                 num_iters=1000, batch_size=200,
                 learning_rate=current_lr, learning_rate_decay=1.0,
                 reg=0.25, verbose=False, logger=logger)
+    
+    loss_history += stats['loss_history']
+    train_acc_history += stats['train_acc_history']
+    val_acc_history += stats['val_acc_history']
     
     loss = stats['loss_history'][-1]
     logger.info(f'Step {epoch * 1000}, Learning Rate: {current_lr}, loss: {loss}')
@@ -275,6 +346,24 @@ show_net_weights(best_net, 'coscine')
 # Print your test accuracy: this should be above 48%
 test_acc = (best_net.predict(X_test) == y_test).mean()
 logger.info(f'Test accuracy: {test_acc}')
+
+# Plot the loss function and train / validation accuracies
+plt.subplot(2, 1, 1)
+plt.plot(loss_history)
+plt.title('Loss history')
+plt.xlabel('Iteration')
+plt.ylabel('Loss')
+
+plt.subplot(2, 1, 2)
+plt.plot(train_acc_history, label='train')
+plt.plot(val_acc_history, label='val')
+plt.title('Classification accuracy history')
+plt.xlabel('Epoch')
+plt.ylabel('Classification accuracy')
+plt.legend()
+plt.subplots_adjust(hspace=0.5)
+plt.savefig('vclab-project1/project1/figs/cosine_annealing_training_loss.png')
+plt.close()
 
 logger.removeHandler(file_handler)
 file_handler.close()
